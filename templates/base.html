@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEOBITZ | {% block title %}{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/icono.png') }}" type="image/x-icon">
+    <link href="{{url_for('static', filename='css/style.css')}}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">Empresa XYZ</div>
+        <ul class="nav-links">
+            <li><a href="{{url_for('index')}}">Inicio</a></li>
+            <li><a href="{{url_for('')}}">Convertidor</a></li>
+            <li><a href="{{url_for('')}}">Login</a></li>
+            <li><a href="{{url_for('')}}">Contacto</a></li>
+        </ul>
+    </nav>
+    </header>
+    {% block content %}
+    {% endblock %}
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2023 Empresa XYZ. Todos los derechos reservados.</p>
+    </footer>
+</body>
+</html>
