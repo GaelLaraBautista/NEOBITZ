@@ -11,13 +11,14 @@
 <div class="container">
     <img src="{{url_for ('static', filename='img/logo.png')}}" alt="Neobyte Logo" class="logo">
 
-    <form action="{{ url_for ('signup') }}" method="POST">
+    <form action="/signup" method="POST">
     <input type="text" name="username" placeholder="Usuario" required>
     <input type="email" name="email" placeholder="Ingresa Un Correo Electronico" required>
     <input type="password" name="password" placeholder="Ingresa Una Contraseña" required>
+    <button type="submit">Registrar</button>
     </form>
     <p></p>
-    <button type="submit">Registrar</button>
+   
     <p>¿Ya Tienes Una Cuenta? <a href="{{ url_for ('login') }}">Inicia Sesión</a></p>
 </div>
 {% endblock %}
