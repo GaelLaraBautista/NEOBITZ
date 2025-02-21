@@ -1,13 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_pymongo import PyMongo
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
-app.secret_key = 'super_secreto_seguro'
+load_dotenv()
+app.secret_key = os.getenv('SECRET_KEY')
+app.config ['MONGO_URI'] = os.getenv('MONGO_URI')
 
 #### Conexión a Base de Datos Con MongoDB ###
-
-app.config['MONGO_URI'] = "mongodb+srv://larabautistagael:xlg36au6xU53O9zF@neobytedb.bipzm.mongodb.net/neobyteDB"
 mongo = PyMongo(app)
 
 #### Rutas Ordinarias ####
