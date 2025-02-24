@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %} Perfil {% endblock %}
+
+{% block content %}
+    <div class="profile-container">
+        <h2>Mi Perfil</h2>
+        <div class="profile-info">
+            <div class="profile-picture">
+                <img src="{{ user.profile_picture if user.profile_picture else url_for('static', filename='img/default-profile.png') }}" alt="Foto de perfil">
+            </div>
+            <div class="profile-details">
+                <p><strong>Nombre de usuario:</strong> {{ user.username }}</p>
+                <p><strong>Correo electrónico:</strong> {{ user.email }}</p>
+                {% if user.created_at %}
+                    <p><strong>Miembro desde:</strong> {{ user.created_at.strftime('%d/%m/%Y') }}</p>
+                {% else %}
+                    <p><strong>Miembro desde:</strong> Fecha no disponible</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="profile-actions">
+            <a href="{{ url_for('edit_profile') }}" class="btn">Editar Perfil</a>
+            <a href="{{ url_for('change_password') }}" class="btn">Cambiar Contraseña</a>
+        </div>
+    </div>
+{% endblock %}

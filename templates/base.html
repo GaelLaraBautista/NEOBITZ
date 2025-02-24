@@ -5,22 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEOBITZ | {% block title %}{% endblock %}</title>
     <link rel="icon" href="{{ url_for('static', filename='img/icono.png') }}" type="image/x-icon">
-    <link href="{{url_for('static', filename='css/style.css')}}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="logo">Empresa XYZ</div>
-        <ul class="nav-links">
-            <li><a href="{{url_for('index')}}">Inicio</a></li>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='img/icono.png') }}" alt="Logo NEOBITZ">
+                <h1>NEOBITZ</h1>
+            </div>
+            <div class="user-info">
+                {% if user %}
+                    <h2>Bienvenido, <span class="username">{{ user["username"] }}</span></h2>
+                {% else %}
+                    <h2>Bienvenido, Usuario</h2>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="logout-btn">Cerrar sesión</a>
+            </div>
+        </div>
+    </header>
+
+    <nav class="sidebar">
+        <div class="sidebar-toggle" onclick="toggleSidebar()">
+            <span>&#9776;</span> <!-- Icono de hamburguesa -->
+        </div>
+        <ul>
+            <li><a href="{{ url_for('index') }}" class="active"><i class="fas fa-home"></i><span class="menu-text">Inicio</span></a></li>
+            <li><a href="{{ url_for('profile') }}"><i class="fas fa-user"></i><span class="menu-text">Perfil</span></a></li>
+            <li><a href="#"><i class="fas fa-cog"></i><span class="menu-text">Configuración</span></a></li>
+            <li><a href="#"><i class="fas fa-chart-bar"></i><span class="menu-text">Reportes</span></a></li>
+            <li><a href="#"><i class="fas fa-question-circle"></i><span class="menu-text">Ayuda</span></a></li>
         </ul>
     </nav>
-    </header>
-    {% block content %}
-    {% endblock %}
-    <!-- Footer -->
-    <footer class="footer">
-        <p>&copy; 2023 Empresa XYZ. Todos los derechos reservados.</p>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2023 NEOBITZ. Todos los derechos reservados.</p>
     </footer>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const main = document.querySelector('main');
+            sidebar.classList.toggle('collapsed');
+            main.classList.toggle('expanded');
+        }
+    </script>
 </body>
 </html>

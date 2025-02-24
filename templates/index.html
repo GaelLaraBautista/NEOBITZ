@@ -1,11 +1,38 @@
 {% extends 'base.html' %}
 
-{% block title %} Home {%endblock%}
+{% block title %} Inicio {% endblock %}
 
 {% block content %}
-
-<main>
-<p>Bienvenido a esta app flask</p>
-</main>
-
+    <div class="dashboard">
+        <h2>Panel de Control</h2>
+        <div class="cards">
+            <div class="card">
+                <div class="card-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Usuarios Registrados</h3>
+                    <p>150</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Tareas Pendientes</h3>
+                    <p>12</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Mensajes Nuevos</h3>
+                    <p>5</p>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
