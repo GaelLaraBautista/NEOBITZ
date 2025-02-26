@@ -327,3 +327,101 @@ footer p {
 .edit-profile-container button:hover, .change-password-container button:hover {
     background-color: #16a085;
 }
+
+/* Estilos Dashboard */
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.cards {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.card {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    flex: 1;
+    text-align: center;
+}
+
+.card h3 {
+    font-size: 18px;
+    margin-bottom: 15px; /* Añade espacio debajo del título */
+    color: #2c3e50;
+}
+
+.card p {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1abc9c;
+    margin: 5; /* Mantén el margen del número en 0 */
+}
+
+.recent-activity {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.recent-activity h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.recent-activity ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recent-activity li {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.recent-activity li:last-child {
+    border-bottom: none;
+}
+
+.quick-links {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.quick-links h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.quick-links .links {
+    display: flex;
+    gap: 10px;
+}
+
+.quick-links .btn {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    background-color: #1abc9c;
+    color: #fff;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.quick-links .btn:hover {
+    background-color: #16a085;
+}
