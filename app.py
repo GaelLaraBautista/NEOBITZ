@@ -1,9 +1,9 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for, session, flash
 from flask_pymongo import PyMongo
-from passlib.context import CryptContext  # Usamos Passlib para el manejo de contraseñas
+from passlib.context import CryptContext
 from dotenv import load_dotenv
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from bson.objectid import ObjectId
 
@@ -29,21 +29,41 @@ def index():
     if 'user' not in session:
         return redirect(url_for('login'))
     
-    #### Obtener metricas de Mongo DB ######
+    #### Obtener métricas de MongoDB ######
     total_users = mongo.db.users.count_documents({})
     pending_tasks = mongo.db.tasks.count_documents({"status": "pendiente"})
     new_messages = mongo.db.messages.count_documents({"read": False})
 
-    #### Actividad Reciente ######
+    ### Obtener Datos de la Gráfica ###
 
+    # Obtener lista de usuarios registrados por mes
+    users_by_month = []  # Lista para almacenar el número de usuarios por mes
+    for i in range(6):  # Capturar la información de los últimos 6 meses
+        start_date = datetime.now() - timedelta(days=30 * (6 - i))
+        end_date = datetime.now() - timedelta(days=30 * (5 - i))
+        count = mongo.db.users.count_documents({
+            "created_at": {"$gte": start_date, "$lt": end_date}
+        })
+        users_by_month.append(count)
+
+    ### Obtener las tareas por status ###
+    tasks_by_status = [
+        mongo.db.tasks.count_documents({"status": "pendiente"}),
+        mongo.db.tasks.count_documents({"status": "en progreso"}),
+        mongo.db.tasks.count_documents({"status": "completada"})
+    ]
+
+    #### Actividad Reciente ######
     recent_activity = list(mongo.db.activity_logs.find().sort("timestamp", -1).limit(5))
 
     return render_template(
-   'index.html',
-    total_users=total_users,
-    pending_task=pending_tasks,
-    new_messages=new_messages,
-    recent_activity=recent_activity
+        'index.html',
+        total_users=total_users,
+        pending_tasks=pending_tasks,  
+        new_messages=new_messages,
+        recent_activity=recent_activity,
+        users_by_month=users_by_month,
+        tasks_by_status=tasks_by_status 
     )
 
 @app.route('/contacto')
@@ -67,7 +87,6 @@ def login():
             return jsonify({"message": "Credenciales incorrectas"}), 401
     else:
         return jsonify({"message": "Usuario no encontrado"}), 404
-
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -173,7 +192,6 @@ def edit_profile():
         return redirect(url_for('profile')) 
 
     return render_template('profile_edit.html', user=user)
-
 
 
 

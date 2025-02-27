@@ -6,6 +6,30 @@
     <div class="dashboard-container">
         <h2>Dashboard</h2>
 
+        <!-- Gráficos -->
+        <div class="charts">
+            <div class="chart-container">
+                <canvas id="usersChart"></canvas> <!-- Gráfico de barras -->
+            </div>
+            <div class="chart-container">
+                <canvas id="tasksChart"></canvas> <!-- Gráfico de dona -->
+            </div>
+        </div>
+
+        <!-- Actividad Reciente y Accesos Rápidos -->
+        <div class="recent-activity">
+            <h3>Actividad Reciente</h3>
+            <ul>
+                {% for activity in recent_activity %}
+                    <li>
+                        <strong>{{ activity.action }}</strong> - {{ activity.timestamp.strftime('%d/%m/%Y %H:%M') }}
+                    </li>
+                {% else %}
+                    <li>No hay actividad reciente.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
         <!-- Tarjetas de Métricas -->
         <div class="cards">
             <div class="card">
@@ -21,21 +45,19 @@
                 <p>{{ new_messages }}</p>
             </div>
         </div>
-
-        <!-- Actividad Reciente -->
-        <div class="recent-activity">
-            <h3>Actividad Reciente</h3>
-            <ul>
-                {% for activity in recent_activity %}
-                    <li>
-                        <strong>{{ activity.action }}</strong> - {{ activity.timestamp.strftime('%d/%m/%Y %H:%M') }}
-                    </li>
-                {% else %}
-                    <li>No hay actividad reciente.</li>
-                {% endfor %}
-            </ul>
-        </div>
-
+<!-- Actividad Reciente y Accesos Rápidos -->
+<div class="recent-activity">
+    <h3>Actividad Reciente</h3>
+    <ul>
+        {% for activity in recent_activity %}
+            <li>
+                <strong>{{ activity.action }}</strong> - {{ activity.timestamp.strftime('%d/%m/%Y %H:%M') }}
+            </li>
+        {% else %}
+            <li>No hay actividad reciente.</li>
+        {% endfor %}
+    </ul>
+</div>
         <!-- Accesos Rápidos -->
         <div class="quick-links">
             <h3>Accesos Rápidos</h3>
@@ -44,4 +66,73 @@
             </div>
         </div>
     </div>
+
+<!-- Script para los gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Datos para los gráficos (pasados desde Flask)
+    const usersData = {
+        labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'], // Meses
+        datasets: [{
+            label: 'Usuarios Registrados',
+            data: JSON.parse('{{ users_by_month | tojson | safe }}'),  // Datos desde Flask
+            backgroundColor: 'rgba(26, 188, 156, 0.2)',
+            borderColor: 'rgba(26, 188, 156, 1)',
+            borderWidth: 1
+        }]
+    };
+
+    const tasksData = {
+        labels: ['Pendientes', 'En Progreso', 'Completadas'],
+        datasets: [{
+            label: 'Tareas',
+            data: JSON.parse('{{ tasks_by_status | tojson | safe }}'),  // Datos desde Flask
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(75, 192, 192, 0.2)'
+            ],
+            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+
+    // Configuración de los gráficos
+    const usersChartConfig = {
+        type: 'bar',
+        data: usersData,
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    };
+
+    const tasksChartConfig = {
+        type: 'doughnut',
+        data: tasksData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Distribución de Tareas'
+                }
+            }
+        }
+    };
+
+    // Inicializar los gráficos
+    const usersChart = new Chart(document.getElementById('usersChart'), usersChartConfig);
+    const tasksChart = new Chart(document.getElementById('tasksChart'), tasksChartConfig);
+</script>
 {% endblock %}
