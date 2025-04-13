@@ -1,0 +1,543 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Tareas{% endblock %}
+
+{% block content %}
+<div class="task-container">
+    <!-- Filtros y Botón de Nueva Tarea -->
+    <div class="task-actions">
+        <a href="{{ url_for('tareas') }}?status=all" class="btn filter-btn {{ 'active' if status_filter == 'all' }}">
+            <i class="bi bi-list-ul"></i> Todas
+        </a>
+        <a href="{{ url_for('tareas') }}?status=pendiente" class="btn filter-btn {{ 'active' if status_filter == 'pendiente' }}">
+            <i class="bi bi-clock"></i> Pendientes
+        </a>
+        <a href="{{ url_for('tareas') }}?status=en progreso" class="btn filter-btn {{ 'active' if status_filter == 'en progreso' }}">
+            <i class="bi bi-lightning-charge"></i> En Progreso
+        </a>
+        <a href="{{ url_for('tareas') }}?status=completada" class="btn filter-btn {{ 'active' if status_filter == 'completada' }}">
+            <i class="bi bi-check-circle"></i> Completadas
+        </a>
+        
+        <button type="button" class="btn new-task-btn" data-bs-toggle="modal" data-bs-target="#taskModal">
+            <i class="bi bi-plus-lg"></i> Nueva Tarea
+        </button>
+    </div>
+
+    <!-- Lista de Tareas -->
+    <div class="task-list">
+        {% for task in tasks %}
+        <div class="task-card {{ task.status.replace(' ', '-') }}">
+            <div class="task-info">
+                <div class="task-header">
+                    <h3>{{ task.title }}</h3>
+                    <span class="task-status-badge {{ task.status.replace(' ', '-') }}">
+                        {{ task.status }}
+                    </span>
+                </div>
+                <p class="task-description">{{ task.description or 'Sin descripción' }}</p>
+                <div class="task-footer">
+                    <small class="task-date">
+                        <i class="bi bi-calendar"></i> {{ task.created_at.strftime('%d/%m/%Y') }}
+                    </small>
+                    {% if task.updated_at and task.updated_at != task.created_at %}
+                    <small class="task-date">
+                        <i class="bi bi-arrow-repeat"></i> {{ task.updated_at.strftime('%d/%m/%Y') }}
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="task-actions">
+                <a href="{{ url_for('editar_tarea', task_id=task._id) }}" class="btn btn-edit" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{{ url_for('eliminar_tarea', task_id=task._id) }}" class="btn btn-delete" title="Eliminar" onclick="return confirm('¿Estás seguro de eliminar esta tarea?')">
+                    <i class="bi bi-trash"></i>
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="no-tasks-message">
+            <i class="bi bi-inbox"></i>
+            <p>No hay tareas registradas</p>
+            <button type="button" class="btn new-task-btn" data-bs-toggle="modal" data-bs-target="#taskModal">
+                <i class="bi bi-plus-lg"></i> Crear primera tarea
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Tareas -->
+<div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-card-checklist"></i> 
+                    {% if task_edit %}Editar Tarea{% else %}Nueva Tarea{% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('tareas') }}">
+                <input type="hidden" name="task_id" value="{{ task_edit._id if task_edit }}">
+                
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="taskTitle" class="form-label">
+                            <i class="bi bi-card-heading"></i> Título *
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="taskTitle" 
+                            name="title" 
+                            value="{{ task_edit.title if task_edit }}"
+                            placeholder="Ej: Revisar informe mensual"
+                            required
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="taskDescription" class="form-label">
+                            <i class="bi bi-text-paragraph"></i> Descripción
+                        </label>
+                        <textarea 
+                            class="form-control" 
+                            id="taskDescription" 
+                            name="description" 
+                            rows="3"
+                            placeholder="Detalles de la tarea..."
+                        >{{ task_edit.description if task_edit }}</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="taskStatus" class="form-label">
+                            <i class="bi bi-list-check"></i> Estado *
+                        </label>
+                        <select class="form-select" id="taskStatus" name="status" required>
+                            <option value="pendiente" {% if task_edit and task_edit.status == 'pendiente' %}selected{% endif %}>
+                                ⏳ Pendiente
+                            </option>
+                            <option value="en progreso" {% if task_edit and task_edit.status == 'en progreso' %}selected{% endif %}>
+                                🚀 En progreso
+                            </option>
+                            <option value="completada" {% if task_edit and task_edit.status == 'completada' %}selected{% endif %}>
+                                ✅ Completada
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-save">
+                        <i class="bi bi-save"></i> {% if task_edit %}Actualizar{% else %}Guardar{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Mostrar mensajes flash -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show">
+                    <div class="alert-content">
+                        {% if category == 'success' %}
+                            <i class="bi bi-check-circle-fill"></i>
+                        {% elif category == 'danger' %}
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill"></i>
+                        {% endif %}
+                        <span>{{ message }}</span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<!-- Script para auto-abrir el modal en edición -->
+{% if task_edit %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var modal = new bootstrap.Modal(document.getElementById('taskModal'));
+        modal.show();
+    });
+</script>
+{% endif %}
+
+<style>
+    /* Estilos generales */
+    .task-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    /* Filtros */
+    .task-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+    
+    .filter-btn, .new-task-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-btn {
+        background-color: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
+    }
+    
+    .filter-btn:hover, .filter-btn.active {
+        background-color: #1abc9c;
+        color: white;
+        border-color: #1abc9c;
+    }
+    
+    .new-task-btn {
+        background-color: #2c3e50;
+        color: white;
+        border: none;
+        margin-left: auto;
+    }
+    
+    .new-task-btn:hover {
+        background-color: #1a252f;
+    }
+    
+    /* Lista de tareas */
+    .task-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .task-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border-left: 4px solid #1abc9c;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .task-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .task-card.pendiente {
+        border-left-color: #e74c3c;
+    }
+    
+    .task-card.en-progreso {
+        border-left-color: #f39c12;
+    }
+    
+    .task-card.completada {
+        border-left-color: #2ecc71;
+    }
+    
+    .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+    
+    .task-card h3 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 1.1rem;
+        flex-grow: 1;
+    }
+    
+    .task-status-badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+    
+    .task-status-badge.pendiente {
+        background-color: #fdecea;
+        color: #e74c3c;
+    }
+    
+    .task-status-badge.en-progreso {
+        background-color: #fef5e6;
+        color: #f39c12;
+    }
+    
+    .task-status-badge.completada {
+        background-color: #e8f8f0;
+        color: #2ecc71;
+    }
+    
+    .task-description {
+        color: #7f8c8d;
+        margin: 10px 0;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    .task-footer {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px;
+        font-size: 0.8rem;
+        color: #95a5a6;
+    }
+    
+    .task-date {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .task-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #f0f0f0;
+    }
+    
+    .btn-edit, .btn-delete {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: none;
+        transition: all 0.2s;
+    }
+    
+    .btn-edit {
+        background-color: #f8f9fa;
+        color: #3498db;
+    }
+    
+    .btn-edit:hover {
+        background-color: #3498db;
+        color: white;
+    }
+    
+    .btn-delete {
+        background-color: #f8f9fa;
+        color: #e74c3c;
+    }
+    
+    .btn-delete:hover {
+        background-color: #e74c3c;
+        color: white;
+    }
+    
+    /* Mensaje cuando no hay tareas */
+    .no-tasks-message {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 40px 20px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        color: #7f8c8d;
+    }
+    
+    .no-tasks-message i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        color: #bdc3c7;
+    }
+    
+    .no-tasks-message p {
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+    }
+    
+    /* Modal */
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 20px;
+    }
+    
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #f0f0f0;
+        padding: 15px 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .form-control, .form-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #1abc9c;
+        box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1);
+        outline: none;
+    }
+    
+    .form-select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 16px 12px;
+        appearance: none;
+    }
+    
+    textarea.form-control {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .btn-cancel, .btn-save {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-cancel {
+        background-color: #f8f9fa;
+        color: #7f8c8d;
+        border: 1px solid #ddd;
+    }
+    
+    .btn-cancel:hover {
+        background-color: #e9ecef;
+    }
+    
+    .btn-save {
+        background-color: #1abc9c;
+        color: white;
+        border: none;
+    }
+    
+    .btn-save:hover {
+        background-color: #16a085;
+    }
+    
+    /* Mensajes flash */
+    .flash-messages {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1100;
+        max-width: 400px;
+        width: 100%;
+    }
+    
+    .alert {
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: none;
+    }
+    
+    .alert-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .alert i {
+        font-size: 1.2rem;
+    }
+    
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .alert-info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .task-list {
+            grid-template-columns: 1fr;
+        }
+        
+        .task-actions {
+            flex-direction: column;
+        }
+        
+        .new-task-btn {
+            margin-left: 0;
+        }
+        
+        .flash-messages {
+            max-width: calc(100% - 40px);
+            left: 20px;
+            right: 20px;
+            top: 10px;
+        }
+    }
+</style>
+{% endblock %}

@@ -194,6 +194,92 @@ def edit_profile():
     return render_template('profile_edit.html', user=user)
 
 
+######## Rutas para las tareas 
+
+# Ruta para renderizar el template con datos iniciales
+@app.route('/tareas', methods=['GET', 'POST'])
+def tareas():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+
+    # Obtener parámetro de filtro
+    status_filter = request.args.get('status', 'all')
+
+    # Consulta base
+    query = {"user": session['user']}
+    if status_filter != 'all':
+        query["status"] = status_filter
+
+    # Manejar formulario de nueva/edición tarea
+    if request.method == 'POST':
+        task_id = request.form.get('task_id')
+        task_data = {
+            "title": request.form['title'],
+            "description": request.form.get('description', ''),
+            "status": request.form['status'],
+            "user": session['user'],
+            "updated_at": datetime.utcnow()
+        }
+
+        if task_id:  # Editar tarea existente
+            mongo.db.tasks.update_one(
+                {"_id": ObjectId(task_id), "user": session['user']},
+                {"$set": task_data}
+            )
+            flash('Tarea actualizada correctamente', 'success')
+        else:  # Nueva tarea
+            task_data["created_at"] = datetime.utcnow()
+            mongo.db.tasks.insert_one(task_data)
+            flash('Tarea creada correctamente', 'success')
+
+        return redirect(url_for('tareas'))
+
+    # Obtener tareas para mostrar
+    tasks = list(mongo.db.tasks.find(query).sort("created_at", -1))
+    
+    # Convertir ObjectId a string para Jinja2
+    tasks = [{**task, "_id": str(task["_id"])} for task in tasks]
+
+    return render_template(
+        'tasks.html',
+        tasks=tasks,
+        status_filter=status_filter,
+        task_edit=None  # Para el formulario de edición
+    )
+
+@app.route('/tareas/eliminar/<task_id>')
+def eliminar_tarea(task_id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+
+    mongo.db.tasks.delete_one({
+        "_id": ObjectId(task_id),
+        "user": session['user']
+    })
+    flash('Tarea eliminada correctamente', 'success')
+    return redirect(url_for('tareas'))
+
+@app.route('/tareas/editar/<task_id>')
+def editar_tarea(task_id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+
+    task = mongo.db.tasks.find_one({
+        "_id": ObjectId(task_id),
+        "user": session['user']
+    })
+    
+    if not task:
+        flash('Tarea no encontrada', 'error')
+        return redirect(url_for('tareas'))
+
+    tasks = list(mongo.db.tasks.find({"user": session['user']}))
+    return render_template(
+        'tasks.html',
+        tasks=tasks,
+        status_filter='all',
+        task_edit={**task, "_id": str(task["_id"])}  # Datos para edición
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
