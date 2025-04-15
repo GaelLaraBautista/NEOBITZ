@@ -6,6 +6,29 @@
     <div class="dashboard-container">
         <h2>Dashboard</h2>
 
+<!-- Botón flotante del chatbot -->
+<div class="chatbot-trigger" onclick="toggleChatbot()">
+    <img src="{{ url_for('static', filename='img/neobot.gif') }}" alt="Chatbot" class="chatbot-gif">
+    <div class="chatbot-notification" id="chatbotNotification">
+        <div class="notification-bubble">¡Hey aquí! 👋</div>
+    </div>
+</div>
+
+<!-- Contenedor del chatbot (oculto inicialmente) -->
+<div class="chatbot-container" id="chatbotWindow" style="display: none;">
+    <div class="chatbot-header">
+        <h4>Asistente Virtual NeoBot</h4>
+        <button class="close-chatbot" onclick="toggleChatbot()">×</button>
+    </div>
+    <div class="chatbot-messages" id="chatbotMessages">
+        <!-- Mensajes aparecerán aquí -->
+    </div>
+    <div class="chatbot-input">
+        <input type="text" id="chatbotInput" placeholder="Escribe tu mensaje..." onkeypress="handleChatbotKeyPress(event)">
+        <button id="chatbotSendButton">Enviar</button>
+    </div>
+</div>
+
         <!-- Gráficos -->
         <div class="charts">
             <div class="chart-container">
@@ -136,4 +159,53 @@
     const usersChart = new Chart(document.getElementById('usersChart'), usersChartConfig);
     const tasksChart = new Chart(document.getElementById('tasksChart'), tasksChartConfig);
 </script>
+
+    <!-- Script para el chatbot -->
+    <script>
+        // Alternar visibilidad del chatbot
+        function toggleChatbot() {
+            const chatbot = document.getElementById('chatbotWindow');
+            chatbot.style.display = chatbot.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        // Enviar mensaje al chatbot
+        function sendChatbotMessage() {
+            const input = document.getElementById('chatbotInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                // Mostrar mensaje del usuario
+                displayMessage(message, 'user');
+                input.value = '';
+                
+                // Simular respuesta del bot (puedes reemplazar con llamada AJAX a tu backend)
+                setTimeout(() => {
+                    const responses = [
+                        "¡Hola! ¿Cómo puedo ayudarte hoy?",
+                        `Recibí tu mensaje: "${message}"`,
+                        "Actualmente tengo estas opciones:\n1. Ver tareas\n2. Consultar reportes\n3. Ayuda",
+                        "¿Necesitas ayuda con algo específico?"
+                    ];
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    displayMessage(randomResponse, 'bot');
+                }, 800);
+            }
+        }
+        // Mostrar mensaje en el chat
+        function displayMessage(text, sender) {
+            const messagesContainer = document.getElementById('chatbotMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            messageDiv.textContent = text;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Permitir enviar con Enter
+        document.getElementById('chatbotInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendChatbotMessage();
+            }
+        });
+    </script>
 {% endblock %}

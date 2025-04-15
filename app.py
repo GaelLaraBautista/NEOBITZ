@@ -281,5 +281,44 @@ def editar_tarea(task_id):
         task_edit={**task, "_id": str(task["_id"])}  # Datos para edición
     )
 
+@app.route('/get-tasks', methods=['GET'])
+def get_tasks():
+    if 'user' not in session:
+        return jsonify({"error": "No autenticado"}), 401
+    
+    status = request.args.get('status', 'pendiente')
+    tasks = list(mongo.db.tasks.find({
+        "user": session['user'],
+        "status": status
+    }).sort("created_at", -1).limit(5))
+    
+    # Formatear respuesta
+    formatted_tasks = []
+    for task in tasks:
+        formatted_tasks.append({
+            "title": task['title'],
+            "status": task['status'],
+            "created_at": task['created_at'].strftime("%d/%m/%Y")
+        })
+    
+    return jsonify({"tasks": formatted_tasks})
+
+# Nueva ruta para búsqueda inteligente
+@app.route('/search-tasks', methods=['GET'])
+def search_tasks():
+    query = request.args.get('q', '')
+    
+    # Búsqueda flexible (por título o descripción)
+    tasks = list(mongo.db.tasks.find({
+        "user": session['user'],
+        "$or": [
+            {"title": {"$regex": query, "$options": "i"}},
+            {"description": {"$regex": query, "$options": "i"}}
+        ]
+    }).limit(5))
+    
+    return jsonify({"tasks": tasks})
+
+
 if __name__ == '__main__':
     app.run(debug=True)
