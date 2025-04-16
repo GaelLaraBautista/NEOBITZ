@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Mis Reportes</h2>
+    <a href="{{ url_for('crear_reporte') }}" class="btn">➕ Nuevo Reporte</a>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Título</th>
+                <th>Tipo</th>
+                <th>Fecha Creación</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reporte in reportes %}
+            <tr>
+                <td>{{ reporte.titulo }}</td>
+                <td>{{ reporte.tipo | capitalize }}</td>
+                <td>{{ reporte.fecha_creacion.strftime('%d/%m/%Y') }}</td>
+                <td>
+                    <a href="{{ url_for('detalle_reporte', id=reporte._id) }}" class="btn">👁️ Ver</a>
+                    <a href="{{ url_for('editar_reporte', id=reporte._id) }}" class="btn">✏️ Editar</a>
+                    <a href="{{ url_for('eliminar_reporte', id=reporte._id) }}" class="btn btn-danger">🗑️ Eliminar</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">No hay reportes creados</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

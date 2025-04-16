@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">✏️ Editar Reporte: {{ reporte.titulo }}</h2>
+    
+    <form method="POST" action="{{ url_for('editar_reporte', id=reporte._id) }}">
+        <!-- Título -->
+        <div class="form-group mb-4">
+            <label for="titulo" class="form-label"><strong>Título del Reporte*</strong></label>
+            <input type="text" class="form-control" id="titulo" name="titulo" 
+                   value="{{ reporte.titulo }}" required>
+        </div>
+        
+        <!-- Tipo de Reporte (deshabilitado para edición) -->
+        <div class="form-group mb-4">
+            <label class="form-label"><strong>Tipo de Reporte</strong></label>
+            <input type="text" class="form-control" value="{{ reporte.tipo | capitalize }}" disabled>
+            <small class="text-muted">El tipo de reporte no puede modificarse</small>
+        </div>
+        
+        <!-- Filtros: Estados -->
+        <div class="form-group mb-4">
+            <label class="form-label"><strong>Filtrar por Estado</strong></label>
+            <div class="row">
+                {% for estado in ['pendiente', 'en progreso', 'completada'] %}
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               name="estado" value="{{ estado }}"
+                               id="estado-{{ estado }}"
+                               {% if estado in reporte.filtros.estado %}checked{% endif %}>
+                        <label class="form-check-label" for="estado-{{ estado }}">
+                            {{ estado | capitalize }}
+                        </label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Filtros: Fechas -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="fecha_inicio" class="form-label"><strong>Fecha Inicio</strong></label>
+                    <input type="date" class="form-control" id="fecha_inicio" 
+                           name="fecha_inicio" value="{{ reporte.filtros.fecha_inicio or '' }}">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="fecha_fin" class="form-label"><strong>Fecha Fin</strong></label>
+                    <input type="date" class="form-control" id="fecha_fin" 
+                           name="fecha_fin" value="{{ reporte.filtros.fecha_fin or '' }}">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Previsualización de datos actuales -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">📊 Datos Actuales del Reporte</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Resumen por Estado:</h6>
+                        <ul class="list-group">
+                            {% for estado, info in reporte.datos.tareas_por_estado.items() %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ estado | capitalize }}
+                                <span class="badge bg-primary rounded-pill">{{ info }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Total de tareas:</h6>
+                        <div class="display-4">{{ reporte.datos.total_tareas }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Botones de acción -->
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{{ url_for('detalle_reporte', id=reporte._id) }}" class="btn btn-secondary">
+                ← Cancelar
+            </a>
+            <div>
+                <button type="submit" class="btn btn-primary me-2">
+                    💾 Guardar Cambios
+                </button>
+                <a href="{{ url_for('regenerar_reporte', id=reporte._id) }}" class="btn btn-warning">
+                    🔄 Regenerar Datos
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-control:disabled {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: 1px solid rgba(0,0,0,.125);
+        border-radius: 0.5rem;
+    }
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+    }
+</style>
+{% endblock %}

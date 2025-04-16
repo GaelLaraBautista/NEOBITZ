@@ -14,6 +14,8 @@ app.config['MONGO_URI'] = os.getenv('MONGO_URI')
 
 #### Conexión a Base de Datos Con MongoDB ###
 mongo = PyMongo(app)
+reportes = mongo.db.reportes
+notificaciones = mongo.db.notificaciones
 
 # Inicializamos el contexto de Passlib
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -303,7 +305,6 @@ def get_tasks():
     
     return jsonify({"tasks": formatted_tasks})
 
-# Nueva ruta para búsqueda inteligente
 @app.route('/search-tasks', methods=['GET'])
 def search_tasks():
     query = request.args.get('q', '')
@@ -319,6 +320,263 @@ def search_tasks():
     
     return jsonify({"tasks": tasks})
 
+###### Reportes ########
+
+@app.route('/reportes')
+def listar_reportes():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    # Buscar reportes del usuario actual
+    mis_reportes = list(reportes.find({"usuario": session['user']}).sort("fecha_creacion", -1))
+    
+    return render_template('listar.html', 
+                         reportes=mis_reportes)
+
+@app.route('/reportes/crear', methods=['GET', 'POST'])
+def crear_reporte():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        # 1. Validar y obtener datos del formulario
+        titulo = request.form.get('titulo', '').strip()
+        if not titulo:
+            flash('El título es obligatorio', 'error')
+            return redirect(url_for('crear_reporte'))
+        
+        tipo = request.form.get('tipo', 'tareas')
+        estados = request.form.getlist('estado')
+        fecha_inicio = request.form.get('fecha_inicio')
+        fecha_fin = request.form.get('fecha_fin')
+        
+        # 2. Validar fechas
+        if fecha_inicio and fecha_fin:
+            try:
+                fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+                fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d')
+                if fecha_inicio_dt > fecha_fin_dt:
+                    flash('La fecha de inicio no puede ser mayor a la fecha final', 'error')
+                    return redirect(url_for('crear_reporte'))
+            except ValueError:
+                flash('Formato de fecha inválido', 'error')
+                return redirect(url_for('crear_reporte'))
+        
+        # 3. Construir query para MongoDB
+        query = {"user": session['user']}
+        
+        # Filtro por estado
+        if estados:
+            query["status"] = {"$in": estados}
+        
+        # Filtro por fechas
+        if fecha_inicio or fecha_fin:
+            query["created_at"] = {}
+            if fecha_inicio:
+                query["created_at"]["$gte"] = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+            if fecha_fin:
+                query["created_at"]["$lte"] = datetime.strptime(fecha_fin + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+        
+        # 4. Generar datos del reporte (sin JSON)
+        datos_reporte = {}
+        
+        if tipo == 'tareas':
+            # Estadísticas básicas
+            total_tareas = mongo.db.tasks.count_documents(query)
+            tareas_por_estado = {}
+            
+            # Conteo por estado
+            for estado in (estados or ['pendiente', 'en progreso', 'completada']):
+                count = mongo.db.tasks.count_documents({**query, "status": estado})
+                if count > 0:
+                    tareas_por_estado[estado] = count
+            
+            # Ejemplos recientes
+            tareas_ejemplo = list(mongo.db.tasks.find(
+                query,
+                {"title": 1, "status": 1, "created_at": 1, "updated_at": 1}
+            ).sort("created_at", -1).limit(5))
+            
+            # Calcular tiempos
+            for tarea in tareas_ejemplo:
+                tarea['tiempo_dias'] = round(
+                    (tarea['updated_at'] - tarea['created_at']).total_seconds() / 86400, 
+                    2
+                )
+            
+            datos_reporte = {
+                'total_tareas': total_tareas,
+                'tareas_por_estado': tareas_por_estado,
+                'ejemplos': tareas_ejemplo
+            }
+        
+        # 5. Guardar en MongoDB
+        nuevo_reporte = {
+            "titulo": titulo,
+            "tipo": tipo,
+            "filtros": {
+                "estado": estados,
+                "fecha_inicio": fecha_inicio,
+                "fecha_fin": fecha_fin
+            },
+            "datos": datos_reporte,
+            "usuario": session['user'],
+            "fecha_creacion": datetime.utcnow(),
+            "fecha_actualizacion": datetime.utcnow()
+        }
+        
+        reportes.insert_one(nuevo_reporte)
+        flash('Reporte creado con éxito', 'success')
+        return redirect(url_for('detalle_reporte', id=nuevo_reporte['_id']))
+    
+    # GET: Mostrar formulario
+    return render_template('crear.html')
+
+@app.route('/reportes/editar/<ObjectId:id>', methods=['GET', 'POST'])
+def editar_reporte(id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    reporte = reportes.find_one({"_id": id, "usuario": session['user']})
+    if not reporte:
+        flash('Reporte no encontrado', 'error')
+        return redirect(url_for('listar_reportes'))
+    
+    if request.method == 'POST':
+        # Actualizar reporte
+        updates = {
+            "titulo": request.form['titulo'],
+            "filtros.estado": request.form.getlist('estado'),
+            "filtros.fecha_inicio": request.form['fecha_inicio'],
+            "filtros.fecha_fin": request.form['fecha_fin'],
+            "fecha_actualizacion": datetime.utcnow()
+        }
+        
+        reportes.update_one({"_id": id}, {"$set": updates})
+        flash('Reporte actualizado', 'success')
+        return redirect(url_for('detalle_reporte', id=id))
+    
+    return render_template('editar.html', reporte=reporte)
+
+@app.route('/reportes/eliminar/<ObjectId:id>')
+def eliminar_reporte(id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    result = reportes.delete_one({"_id": id, "usuario": session['user']})
+    if result.deleted_count > 0:
+        flash('Reporte eliminado', 'success')
+    else:
+        flash('No se pudo eliminar el reporte', 'error')
+    
+    return redirect(url_for('listar_reportes'))
+
+@app.route('/reportes/<ObjectId:id>')
+def detalle_reporte(id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    reporte = reportes.find_one({"_id": id, "usuario": session['user']})
+    if not reporte:
+        flash('Reporte no encontrado', 'error')
+        return redirect(url_for('listar_reportes'))
+    
+    return render_template('detalle.html', 
+                         reporte=reporte,
+                         ahora=datetime.now().strftime("%d/%m/%Y %H:%M"))
+
+def generar_datos_reporte(tipo, filtros, usuario):
+    query = {"user": usuario}
+    
+    # Filtros básicos
+    if filtros.get('estado'):
+        query["status"] = {"$in": filtros['estado']}
+    
+    # Datos mínimos requeridos
+    return {
+        "total_tareas": mongo.db.tasks.count_documents(query),
+        "tareas_por_estado": {
+            estado: mongo.db.tasks.count_documents({**query, "status": estado})
+            for estado in (filtros.get('estado') or ['pendiente', 'en progreso', 'completada'])
+        }
+    }
+
+@app.route('/reportes/regenerar/<ObjectId:id>')
+def regenerar_reporte(id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    reporte = reportes.find_one({"_id": id, "usuario": session['user']})
+    if not reporte:
+        flash('Reporte no encontrado', 'error')
+        return redirect(url_for('listar_reportes'))
+    
+    # Regenerar datos con los mismos filtros
+    nuevos_datos = generar_datos_reporte(
+        tipo=reporte['tipo'],
+        filtros=reporte['filtros'],
+        usuario=session['user']
+    )
+    
+    reportes.update_one(
+        {"_id": id},
+        {"$set": {
+            "datos": nuevos_datos,
+            "fecha_actualizacion": datetime.utcnow()
+        }}
+    )
+    
+    flash('¡Datos actualizados con la información más reciente!', 'success')
+    return redirect(url_for('editar_reporte', id=id))
+
+###### Notificaciones ######
+
+def crear_notificacion(usuario, mensaje, tipo='info'):
+    """Crea una notificación en la base de datos"""
+    notificaciones.insert_one({
+        "usuario": usuario,
+        "mensaje": mensaje,
+        "tipo": tipo,  # info, alerta, exito
+        "leida": False,
+        "fecha": datetime.utcnow()
+    })
+
+def obtener_notificaciones(usuario, limit=5):
+    """Obtiene las notificaciones no leídas"""
+    return list(notificaciones.find(
+        {"usuario": usuario},
+        sort=[("fecha", -1)],
+        limit=limit
+    ))
+
+@app.route('/notificaciones')
+def ver_notificaciones():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    # Marcar como leídas al visualizarlas
+    notificaciones.update_many(
+        {"usuario": session['user'], "leida": False},
+        {"$set": {"leida": True}}
+    )
+    
+    return render_template(
+        'notificaciones.html',
+        notificaciones=obtener_notificaciones(session['user'], limit=10)
+    )
+
+
+@app.context_processor
+def inject_notificaciones():
+    if 'user' in session:
+        return dict(
+            notificaciones=mongo.db.notificaciones,
+            num_notificaciones=mongo.db.notificaciones.count_documents({
+                "usuario": session['user'],
+                "leida": False
+            })
+        )
+    return dict(notificaciones=None, num_notificaciones=0)
 
 if __name__ == '__main__':
     app.run(debug=True)

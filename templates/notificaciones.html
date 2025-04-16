@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>🔔 Tus Notificaciones</h2>
+    
+    {% if notificaciones %}
+    <div class="list-group mt-4">
+        {% for notif in notificaciones %}
+        <div class="list-group-item 
+            {% if notif.tipo == 'alerta' %}list-group-item-warning
+            {% elif notif.tipo == 'exito' %}list-group-item-success
+            {% endif %}">
+            <div class="d-flex justify-content-between">
+                <span>{{ notif.mensaje }}</span>
+                <small class="text-muted">
+                    {{ notif.fecha.strftime('%d/%m/%Y %H:%M') }}
+                </small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info mt-4">
+        No tienes notificaciones nuevas
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

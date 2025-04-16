@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Crear Nuevo Reporte</h2>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label>Título del Reporte</label>
+            <input type="text" name="titulo" required class="form-control">
+        </div>
+        
+        <div class="form-group">
+            <label>Tipo de Reporte</label>
+            <select name="tipo" class="form-control">
+                <option value="tareas">Tareas</option>
+                <option value="usuarios">Usuarios</option>
+                <option value="rendimiento">Rendimiento</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Filtrar por Estado</label>
+            <div>
+                <label><input type="checkbox" name="estado" value="pendiente"> Pendiente</label>
+                <label><input type="checkbox" name="estado" value="en progreso"> En Progreso</label>
+                <label><input type="checkbox" name="estado" value="completada"> Completada</label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Rango de Fechas</label>
+            <input type="date" name="fecha_inicio" class="form-control">
+            <input type="date" name="fecha_fin" class="form-control">
+        </div>
+        
+        <button type="submit" class="btn">Generar Reporte</button>
+    </form>
+</div>
+{% endblock %}

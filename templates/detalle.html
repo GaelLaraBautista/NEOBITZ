@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="reporte-header">
+        <h2>{{ reporte.titulo }}</h2>
+        <small>Generado el: {{ reporte.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</small>
+        
+        <div class="acciones">
+            <a href="{{ url_for('editar_reporte', id=reporte._id) }}" class="btn">✏️ Editar</a>
+            <button onclick="window.print()" class="btn">🖨️ Imprimir</button>
+        </div>
+    </div>
+    
+    <!-- Contenido dinámico según tipo de reporte -->
+    {% if reporte.tipo == 'tareas' %}
+    <div class="reporte-section">
+        <h3>Resumen de Tareas</h3>
+        
+        <!-- Mostrar total de tareas -->
+        <div class="resumen-total">
+            <strong>Total de tareas:</strong> {{ reporte.datos.total_tareas }}
+        </div>
+        
+        <!-- Tabla de estados -->
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Estado</th>
+                    <th>Cantidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for estado, cantidad in reporte.datos.tareas_por_estado.items() %}
+                <tr>
+                    <td>{{ estado | capitalize }}</td>
+                    <td>{{ cantidad }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Ejemplos de tareas -->
+        <h4>Ejemplos recientes</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Tiempo (días)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tarea in reporte.datos.ejemplos %}
+                <tr>
+                    <td>{{ tarea.title }}</td>
+                    <td>{{ tarea.status | capitalize }}</td>
+                    <td>{{ tarea.created_at.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ tarea.tiempo_dias }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    <!-- Filtros aplicados -->
+    <div class="reporte-filtros">
+        <h4>Filtros Aplicados</h4>
+        <p><strong>Estados:</strong> {{ reporte.filtros.estado | join(', ') or 'Todos' }}</p>
+        <p><strong>Rango de fechas:</strong> 
+            {% if reporte.filtros.fecha_inicio %}
+                {{ reporte.filtros.fecha_inicio }} al {{ reporte.filtros.fecha_fin }}
+            {% else %}
+                Todas las fechas
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<style>
+@media print {
+    .acciones, .navbar { display: none; }
+    body { padding: 20px; }
+}
+</style>
+{% endblock %}
